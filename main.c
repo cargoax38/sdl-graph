@@ -4,13 +4,14 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_keycode.h>
+#include <SDL3/SDL_mouse.h>
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-#define WIDTH 128
-#define HEIGHT 128
+#define WIDTH 256
+#define HEIGHT 256
 #define IFPS 0.0167
 
 uint32_t framebuffer[WIDTH * HEIGHT];
@@ -28,9 +29,9 @@ void set_pixel(double x, double y, uint32_t color) {
 void set_pixel_vec(struct vec4d* vec, uint32_t color) {
 	if(vec == NULL) return;
 	if(vec->elements[3] == 0) return;
-	if(vec->elements[2] < 1 || vec->elements[2] > 10) return;
+	if(vec->elements[2] < 0.1 || vec->elements[2] > 10) return;
 
-	set_pixel(vec->elements[0] / vec->elements[3], vec->elements[1] / vec->elements[3], color);
+	set_pixel(vec->elements[0] / vec->elements[3], -vec->elements[1] / vec->elements[3], color);
 }
 
 int main(void) {
@@ -39,17 +40,17 @@ int main(void) {
 	SDL_Texture* texture;
 	SDL_Event event;
 
-	//printf("| %.2f |\n| %.2f |\n| %.2f |\n| %.2f |\n", pos1.elements[0], pos1.elements[1], pos1.elements[2], pos1.elements[3]);
-
 	if(!SDL_Init(SDL_INIT_VIDEO)) {
 		fprintf(stderr, "Error while initializing SDL video");
 		return EXIT_FAILURE;
 	}
 
+	SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "0");
+
 	window = SDL_CreateWindow(
 		"SDL Graph view",
-		4 * WIDTH,
-		4 * HEIGHT,
+		2 * WIDTH,
+		2 * HEIGHT,
 		0
 	);
 	if(window == NULL) {
@@ -89,19 +90,17 @@ int main(void) {
 	}
 
 	struct camera cam;
-	camera_projection(&cam, 1.22, 1, 10);
-	camera_setpos(&cam, 0, 0, -4, 0, 0);
+	camera_projection(&cam, 1.22, 0.1, 10);
+	camera_setpos(&cam, 0, 1, -4, 0, 0);
 
-	struct vec4d pos1 = vec4d_init(-1, -1, -1);
-	struct vec4d pos2 = vec4d_init(-1, -1, 1);
-	struct vec4d pos3 = vec4d_init(-1, 1, -1);
-	struct vec4d pos4 = vec4d_init(-1, 1, 1);
-	struct vec4d pos5 = vec4d_init(1, -1, -1);
-	struct vec4d pos6 = vec4d_init(1, -1, 1);
-	struct vec4d pos7 = vec4d_init(1, 1, -1);
-	struct vec4d pos8 = vec4d_init(1, 1, 1);
+	struct vec4d plane[49];
+	struct vec4d proj[49];
 
-	struct vec4d pro1, pro2, pro3, pro4, pro5, pro6, pro7, pro8;
+	for(int i = 0; i < 7; i++) {
+		for(int j = 0; j < 7; j++) {
+			plane[j + i * 7] = vec4d_init(i - 3, 0, j - 3);
+		}
+	}
 
 	SDL_SetTextureScaleMode(
 		texture,
@@ -119,64 +118,67 @@ int main(void) {
 			if(event.type == SDL_EVENT_QUIT) {
 				running = 0;
 			}
+			if(SDL_GetWindowRelativeMouseMode(window)) {
+				if(event.type == SDL_EVENT_MOUSE_MOTION) {
+					camera_move(&cam, 0, 0, 0, -event.motion.xrel / 1000, 0);
+					camera_move(&cam, 0, 0, 0, 0, event.motion.yrel / 1000);
+				}
+
+				if(event.key.key == SDLK_ESCAPE) {				
+					SDL_SetWindowRelativeMouseMode(window, false);
+				}
+
+				if(event.key.key == SDLK_W) {
+					camera_move(&cam, 0, 0, 0.1, 0, 0);
+				}
+				if(event.key.key == SDLK_S) {
+					camera_move(&cam, 0, 0, -0.1, 0, 0);
+				}
+				if(event.key.key == SDLK_A) {
+					camera_move(&cam, -0.1, 0, 0, 0, 0);
+				}
+				if(event.key.key == SDLK_D) {
+					camera_move(&cam, 0.1, 0, 0, 0, 0);
+				}
+				if(event.key.key == SDLK_SPACE) {
+					camera_move(&cam, 0, 0.1, 0, 0, 0);
+				}
+				if(event.key.key == SDLK_LSHIFT) {
+					camera_move(&cam, 0, -0.1, 0, 0, 0);
+				}
+			}
+
+			if(event.type == SDL_EVENT_MOUSE_MOTION) {
+				if(SDL_GetWindowRelativeMouseMode(window)) {
+					camera_move(&cam, 0, 0, 0, -event.motion.xrel / 200, 0);
+					camera_move(&cam, 0, 0, 0, 0, event.motion.yrel / 200);
+				}
+			}
+			if(event.type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
+				SDL_SetWindowRelativeMouseMode(window, true);
+			}
+
 			if(event.type == SDL_EVENT_KEY_DOWN) {
 				if((event.key.mod & SDLK_LCTRL) && event.key.key == SDLK_W) {
 					running = 0;
 				}
-
-				if(event.key.key == SDLK_K) {
-					camera_move(&cam, 0, 0, 0, 0.05, 0);
-				}
-				if(event.key.key == SDLK_M) {
-					camera_move(&cam, 0, 0, 0, -0.05, 0);
-				}
-				if(event.key.key == SDLK_O) {
-					camera_move(&cam, 0, 0, 0, 0, 0.05);
-				}
-				if(event.key.key == SDLK_L) {
-					camera_move(&cam, 0, 0, 0, 0, -0.05);
-				}
-				if(event.key.key == SDLK_W) {
-					camera_move(&cam, 0, 0, 0.5, 0, 0);	
-				}
-				if(event.key.key == SDLK_S) {
-					camera_move(&cam, 0, 0, -0.5, 0, 0);
-				}
-				if(event.key.key == SDLK_A) {
-					camera_move(&cam, -0.5, 0, 0, 0, 0);	
-				}
-				if(event.key.key == SDLK_D) {
-					camera_move(&cam, 0.5, 0, 0, 0, 0);
-				}
-				if(event.key.key == SDLK_SPACE) {
-					camera_move(&cam, 0, -0.5, 0, 0, 0);	
-				}
-				if(event.key.key == SDLK_LSHIFT) {
-					camera_move(&cam, 0, 0.5, 0, 0, 0);
-				}
-				for(int i = 0; i < WIDTH * HEIGHT; i++) {
-					framebuffer[i] = 0x2A2A2A;
-				}
-
-				camera_apply(&pro1, &cam, &pos1);
-				camera_apply(&pro2, &cam, &pos2);
-				camera_apply(&pro3, &cam, &pos3);
-				camera_apply(&pro4, &cam, &pos4);
-				camera_apply(&pro5, &cam, &pos5);
-				camera_apply(&pro6, &cam, &pos6);
-				camera_apply(&pro7, &cam, &pos7);
-				camera_apply(&pro8, &cam, &pos8);
 			}
 		}
 
-		set_pixel_vec(&pro1, 0xFFFFFF);
-		set_pixel_vec(&pro2, 0xFFFFFF);
-		set_pixel_vec(&pro3, 0xFFFFFF);
-		set_pixel_vec(&pro4, 0xFFFFFF);
-		set_pixel_vec(&pro5, 0xFFFFFF);
-		set_pixel_vec(&pro6, 0xFFFFFF);
-		set_pixel_vec(&pro7, 0xFFFFFF);
-		set_pixel_vec(&pro8, 0xFFFFFF);
+		for(int i = 0; i < WIDTH * HEIGHT; i++) {
+			framebuffer[i] = 0x2A2A2A;
+		}
+
+		for(int i = 0; i < 49; i++) {
+			camera_apply(&proj[i], &cam, &plane[i]);
+		}
+
+		for(int i = 0; i < 49; i++) {
+			if(i == 0) set_pixel_vec(&proj[0], 0xFF0000);
+			else if(i == 1) set_pixel_vec(&proj[1], 0x00FF00);
+			else if(i == 7) set_pixel_vec(&proj[7], 0x0000FF);
+			else set_pixel_vec(&proj[i], 0xFFFFFF);
+		}
 
 		SDL_UpdateTexture(texture, NULL, framebuffer, WIDTH * sizeof(uint32_t));
 

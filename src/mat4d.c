@@ -42,36 +42,18 @@ void mat4d_invert_view(struct mat4d* mat, const double x, const double y, const 
 	double cpitch = cos(pitch);
 	double spitch = sin(pitch);
 
-	/*mat->elements[0] = cyaw;
+	mat->elements[0] = cyaw;
 	mat->elements[1] = 0;
 	mat->elements[2] = syaw;
 	mat->elements[3] = -x * cyaw - z * syaw;
 	mat->elements[4] = -spitch * syaw;
 	mat->elements[5] = cpitch;
 	mat->elements[6] = spitch * cyaw;
-	mat->elements[7] = -y * cpitch + spitch * (x * syaw - z * cyaw);
-	mat->elements[8] = spitch * syaw;
+	mat->elements[7] = x * spitch * syaw - y * cpitch - z * spitch * cyaw;
+	mat->elements[8] = -cpitch * syaw;
 	mat->elements[9] = -spitch;
 	mat->elements[10] = cpitch * cyaw;
-	mat->elements[11] = y * spitch + cpitch * (x * syaw - z * cyaw);
-	mat->elements[12] = 0;
-	mat->elements[13] = 0;
-	mat->elements[14] = 0;
-	mat->elements[15] = 1;
-	*/
-
-	mat->elements[0] = cyaw;
-	mat->elements[1] = -syaw * spitch;
-	mat->elements[2] = syaw * cpitch;
-	mat->elements[3] = -x;
-	mat->elements[4] = 0;
-	mat->elements[5] = cpitch;
-	mat->elements[6] = spitch;
-	mat->elements[7] = -y;
-	mat->elements[8] = -syaw;
-	mat->elements[9] = -cyaw * spitch;
-	mat->elements[10] = cyaw * cpitch;
-	mat->elements[11] = -z;
+	mat->elements[11] = x * cpitch * syaw + y * spitch - z * cpitch * cyaw;
 	mat->elements[12] = 0;
 	mat->elements[13] = 0;
 	mat->elements[14] = 0;
@@ -106,24 +88,20 @@ void mat4d_display(const struct mat4d* mat) {
 	for(int i = 0; i < 4; i++) {
 		printf("| ");
 		for(int j = 0; j < 4; j++) {
-			if(mat->elements[j + i * 4] == -0) {
+			double value = mat->elements[j + i * 4];
+			if(value == -0) {
 				printf("  0.00");
 				continue;
 			}
 
-			if(mat->elements[j + i * 4] < 0) {
-				printf(" -%.2f", -mat->elements[j + i * 4]);
+			if(value < 0) {
+				printf(" %.2f", value);
 			}else {
-				printf("  %.2f", mat->elements[j + i * 4]);
+				printf("  %.2f", value);
 			}
 		}
 		printf(" |\n");
 	}
-
-	/*printf("| %.2f %.2f %.2f %.2f |\n", mat->elements[0], mat->elements[1], mat->elements[2], mat->elements[3]);
-	printf("| %.2f %.2f %.2f %.2f |\n", mat->elements[4], mat->elements[5], mat->elements[6], mat->elements[7]);
-	printf("| %.2f %.2f %.2f %.2f |\n", mat->elements[8], mat->elements[9], mat->elements[10], mat->elements[11]);
-	printf("| %.2f %.2f %.2f %.2f |\n", mat->elements[12], mat->elements[13], mat->elements[14], mat->elements[15]);*/
 }
 
 void mat4d_product(struct mat4d* res, const struct mat4d* mat1, const struct mat4d* mat2) {
