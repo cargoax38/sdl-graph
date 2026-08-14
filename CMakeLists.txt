@@ -7,8 +7,12 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(SDL3 CONFIG REQUIRED PATHS C:/Libraries/SDL3-3.4.14)
 
+add_library(glad STATIC glad/src/glad.c)
+
+target_include_directories(glad PUBLIC glad/include)
+
 add_executable(App)
 
 target_sources(App PRIVATE main.c src/mat4d.c src/vec4d.c src/camera.c)
 
-target_link_libraries(App PRIVATE SDL3::SDL3)
+target_link_libraries(App PRIVATE SDL3::SDL3 glad)
