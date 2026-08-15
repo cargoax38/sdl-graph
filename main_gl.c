@@ -65,6 +65,12 @@ GLuint createShaderProgram(const GLchar* vertexSource, const GLchar* fragmentSou
 
 	glValidateProgram(program);
 
+	glDetachShader(program, vertexShader);
+	glDetachShader(program, fragmentShader);
+
+	glDeleteShader(vertexShader);
+	glDeleteShader(fragmentShader);
+
 	return program;
 }
 
@@ -88,16 +94,36 @@ int main(void) {
 
 	glGenVertexArrays(1, &vertexArrayObject);
 	glBindVertexArray(vertexArrayObject);
+
 	glGenBuffers(1, &vertexBufferObject);
 	glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObject);
 	glBufferData(GL_ARRAY_BUFFER, 9 * sizeof(GLfloat), vertexPosition, GL_STATIC_DRAW);
 
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
 	glBindVertexArray(0);
 	glDisableVertexAttribArray(0);
+	
+	FILE* f;
+	errno_t err;
+	char* res;
 
-	GLuint graphicsPipeline = createShaderProgram(vertexSource, fragmentSource);
+	if((err = fopen_s(&f, "res/fragment.glsl", "r")) != 0) {
+		fprintf(stderr, "Error when reading GLSL fragment shader");
+	}else {
+		fseek(f, 0, SEEK_END);
+		long length = ftell(f);
+		fseek(f, 0, SEEK_SET);
+		res = (char*) malloc(length);
+
+		fread(res, 1, length, f);
+		fclose(f);
+	}
+
+	GLuint graphicsPipeline = createShaderProgram(vertexSource, res);
 
 	uint8_t running = 1;
 	while(running) {
@@ -121,11 +147,14 @@ int main(void) {
 
 		glDrawArrays(GL_LINE_LOOP, 0, 3);
 
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glBindVertexArray(0);
 		glUseProgram(0);
 
 		SDL_GL_SwapWindow(window);
 	}
 
+	free(res);
 	destroyApplication();
 
 	return EXIT_SUCCESS;
