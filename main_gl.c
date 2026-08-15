@@ -1,3 +1,5 @@
+#include "headers/utils.h"
+
 #include <glad/glad.h>
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_events.h>
@@ -18,21 +20,9 @@ SDL_Window* window = NULL;
 SDL_GLContext context = NULL;
 SDL_Event event;
 
-const char* vertexSource =
-	"#version 410 core\n"
-	"in vec4 position;\n"
-	"void main()\n"
-	"{\n"
-	"	gl_Position = vec4(position.x, position.y, position.z, position.w);\n"
-	"}\n";
-
-const char* fragmentSource =
-	"#version 410 core\n"
-	"out vec4 color;\n"
-	"void main()\n"
-	"{\n"
-	"	color = vec4(1.0f, 0.5f, 0.0f, 1.0f);\n"
-	"}\n";
+GLuint program;
+GLuint vertexArrayObject;
+GLuint vertexBufferObjects[2];
 
 uint8_t createSDLContext();
 uint8_t createGLContext();
@@ -53,11 +43,27 @@ GLuint compileShader(GLuint type, const GLchar* source) {
 	return shaderObject;
 }
 
-GLuint createShaderProgram(const GLchar* vertexSource, const GLchar* fragmentSource) {
+GLuint createShaderProgram(const GLchar* vertexPath, const GLchar* fragmentPath) {
+	char* vertexSource = readFile(vertexPath);
+
+	if(vertexSource == NULL) {
+		return 0;
+	}
+
+	char* fragmentSource = readFile(fragmentPath);
+
+	if(fragmentSource == NULL) {
+		free(vertexSource);
+		return 0;
+	}
+
 	GLuint program = glCreateProgram();
 
 	GLuint vertexShader = compileShader(GL_VERTEX_SHADER, vertexSource);
 	GLuint fragmentShader = compileShader(GL_FRAGMENT_SHADER, fragmentSource);
+
+	free(vertexSource);
+	free(fragmentSource);
 
 	glAttachShader(program, vertexShader);
 	glAttachShader(program, fragmentShader);
@@ -74,14 +80,39 @@ GLuint createShaderProgram(const GLchar* vertexSource, const GLchar* fragmentSou
 	return program;
 }
 
+void initDraw(GLuint* running) {
+	while(SDL_PollEvent(&event)) {
+		if(event.type == SDL_EVENT_QUIT) {
+			*running = 0;
+		}
+	}
+}
+
+void preDraw() {
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_CULL_FACE);
+
+	glViewport(0, 0, WIDTH, HEIGHT);
+	glClearColor(0.2F, 0.2F, 0.2F, 1.0F);
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+}
+
+void draw(GLuint program) {
+	glUseProgram(program);
+
+	glBindVertexArray(vertexArrayObject);
+	glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObjects[0]);
+
+	glDrawArrays(GL_TRIANGLES, 0, 3);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+	glUseProgram(0);
+}
+
 int main(void) {
 	if(createSDLContext() == EXIT_FAILURE) return EXIT_FAILURE;
 	if(createGLContext() == EXIT_FAILURE) return EXIT_FAILURE;
-
-	printf("%s\n", glGetString(GL_VENDOR));
-	printf("%s\n", glGetString(GL_RENDERER));
-	printf("%s\n", glGetString(GL_VERSION));
-	printf("%s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
 
 	const GLfloat vertexPosition[9] = {
 		-0.8F, -0.8F, 0.0F,
@@ -89,72 +120,55 @@ int main(void) {
 		0.0F, 0.8F, 0.0F
 	};
 
-	GLuint vertexArrayObject = 0;
-	GLuint vertexBufferObject = 0;
+	const GLfloat vertexColor[9] = {
+		1.0F, 0.0F, 0.0F,
+		0.0F, 1.0F, 0.0F,
+		0.0F, 0.0F, 1.0F
+	};
+
+	vertexArrayObject = 0;
+	vertexBufferObjects[0] = 0;
+	vertexBufferObjects[1] = 0;
 
 	glGenVertexArrays(1, &vertexArrayObject);
 	glBindVertexArray(vertexArrayObject);
 
-	glGenBuffers(1, &vertexBufferObject);
-	glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObject);
+	glGenBuffers(2, vertexBufferObjects);
+	glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObjects[0]);
 	glBufferData(GL_ARRAY_BUFFER, 9 * sizeof(GLfloat), vertexPosition, GL_STATIC_DRAW);
 
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
+	//glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObjects[1]);
+	glBufferData(GL_ARRAY_BUFFER, 9 * sizeof(GLfloat), vertexColor, GL_STATIC_DRAW);
+
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	glBindVertexArray(0);
 	glDisableVertexAttribArray(0);
+	glDisableVertexAttribArray(1);
 	
-	FILE* f;
-	errno_t err;
-	char* res;
-
-	if((err = fopen_s(&f, "res/fragment.glsl", "r")) != 0) {
-		fprintf(stderr, "Error when reading GLSL fragment shader");
-	}else {
-		fseek(f, 0, SEEK_END);
-		long length = ftell(f);
-		fseek(f, 0, SEEK_SET);
-		res = (char*) malloc(length);
-
-		fread(res, 1, length, f);
-		fclose(f);
+	GLuint graphicsPipeline = createShaderProgram("..\\res\\vertex.glsl", "..\\res\\fragment.glsl");
+	if(graphicsPipeline == 0) {
+		destroyApplication();
+		return EXIT_FAILURE;
 	}
 
-	GLuint graphicsPipeline = createShaderProgram(vertexSource, res);
-
-	uint8_t running = 1;
-	while(running) {
-		while(SDL_PollEvent(&event)) {
-			if(event.type == SDL_EVENT_QUIT) {
-				running = 0;
-			}
-		}
-
-		glDisable(GL_DEPTH_TEST);
-		glDisable(GL_CULL_FACE);
-
-		glViewport(0, 0, WIDTH, HEIGHT);
-		glClearColor(0.5F, 0.5F, 0.5F, 1.0F);
-		glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-
-		glUseProgram(graphicsPipeline);
-
-		glBindVertexArray(vertexArrayObject);
-		glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObject);
-
-		glDrawArrays(GL_LINE_LOOP, 0, 3);
-
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		glBindVertexArray(0);
-		glUseProgram(0);
-
+	GLuint running = 1;
+	while(running) {		
+		initDraw(&running);
+		preDraw();
+		draw(graphicsPipeline);
+		
 		SDL_GL_SwapWindow(window);
 	}
 
-	free(res);
 	destroyApplication();
 
 	return EXIT_SUCCESS;
@@ -172,7 +186,6 @@ uint8_t createSDLContext() {
 		fprintf(stderr, "Error when initializing the window");
 		return EXIT_FAILURE;
 	}
-
 
 	return EXIT_SUCCESS;
 }
@@ -202,6 +215,11 @@ uint8_t createGLContext() {
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 	
+	printf("%s\n", glGetString(GL_VENDOR));
+	printf("%s\n", glGetString(GL_RENDERER));
+	printf("%s\n", glGetString(GL_VERSION));
+	printf("%s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
+
 	return EXIT_SUCCESS;
 }
 
