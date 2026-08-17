@@ -1,12 +1,13 @@
 #include "../headers/camera.h"
+#include "glad/glad.h"
 #include <math.h>
 #include <stddef.h>
 
-void camera_projection(struct camera* cam, const double fov, const double z_near, const double z_far) {
+void camera_projection(struct camera* cam, const GLfloat fov, const GLfloat z_near, const GLfloat z_far) {
 	mat4d_projection(&(cam->projection), fov, z_near, z_far);
 }
 
-void camera_setpos(struct camera* cam, const double x, const double y, const double z, const double yaw, const double pitch) {
+void camera_setpos(struct camera* cam, const GLfloat x, const GLfloat y, const GLfloat z, const GLfloat yaw, const GLfloat pitch) {
 	cam->pos = vec4d_init(x, y, z);
 	cam->yaw = yaw;
 	cam->pitch = pitch;
@@ -14,7 +15,7 @@ void camera_setpos(struct camera* cam, const double x, const double y, const dou
 	mat4d_invert_view(&(cam->view), x, y, z, yaw, pitch);
 }
 
-void camera_move(struct camera* cam, const double dx, const double dy, const double dz, const double dyaw, const double dpitch) {
+void camera_move(struct camera* cam, const GLfloat dx, const GLfloat dy, const GLfloat dz, const GLfloat dyaw, const GLfloat dpitch) {
 	cam->yaw += dyaw;
 	cam->pitch += dpitch;
 	if(cam->pitch < -1.5707) cam->pitch = -1.5707;

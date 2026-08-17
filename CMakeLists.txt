@@ -13,6 +13,6 @@ target_include_directories(glad PUBLIC glad/include)
 
 add_executable(App)
 
-target_sources(App PRIVATE main_gl.c src/utils.c)
+target_sources(App PRIVATE main_gl.c src/utils.c src/mat4d.c src/camera.c src/vec4d.c)
 
 target_link_libraries(App PRIVATE SDL3::SDL3 glad)

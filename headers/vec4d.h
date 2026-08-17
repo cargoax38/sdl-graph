@@ -1,10 +1,11 @@
 #ifndef VECTOR_H_INCLUDED
 #define VECTOR_H_INCLUDED
 
+#include "glad/glad.h"
 struct vec4d {
-	double elements[4];
+	GLfloat elements[4];
 };
 
-struct vec4d vec4d_init(const double, const double, const double);
+struct vec4d vec4d_init(const GLfloat, const GLfloat, const GLfloat);
 
 #endif

@@ -1,4 +1,5 @@
 #include "../headers/mat4d.h"
+#include "glad/glad.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -36,11 +37,11 @@ void mat4d_identity(struct mat4d* mat) {
 	mat->elements[15] = 1;
 }
 
-void mat4d_invert_view(struct mat4d* mat, const double x, const double y, const double z, const double yaw, const double pitch) {
-	double cyaw = cos(yaw);
-	double syaw = sin(yaw);
-	double cpitch = cos(pitch);
-	double spitch = sin(pitch);
+void mat4d_invert_view(struct mat4d* mat, const GLfloat x, const GLfloat y, const GLfloat z, const GLfloat yaw, const GLfloat pitch) {
+	GLfloat cyaw = cos(yaw);
+	GLfloat syaw = sin(yaw);
+	GLfloat cpitch = cos(pitch);
+	GLfloat spitch = sin(pitch);
 
 	mat->elements[0] = cyaw;
 	mat->elements[1] = 0;
@@ -60,7 +61,7 @@ void mat4d_invert_view(struct mat4d* mat, const double x, const double y, const 
 	mat->elements[15] = 1;
 }
 
-void mat4d_projection(struct mat4d* mat, const double fov, const double z_near, const double z_far) {
+void mat4d_projection(struct mat4d* mat, const GLfloat fov, const GLfloat z_near, const GLfloat z_far) {
 	if(mat == NULL) return;
 	if(fov <= 0 || fov >= 3.14 || z_near == z_far) return;
 

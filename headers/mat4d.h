@@ -1,10 +1,11 @@
 #ifndef MATRIX_H_INCLUDED
 #define MATRIX_H_INCLUDED
 
+#include "glad/glad.h"
 #include "vec4d.h"
 
 struct mat4d {
-	double elements[16];
+	GLfloat elements[16];
 };
 
 /**
@@ -31,7 +32,7 @@ void mat4d_identity(struct mat4d*);
  * @params const double yaw : the yaw rotation of the camera (rotation about the y canonical coordinate of R^{3}).
  * @params const double pitch : the pitch rotation of the camera (rotation about the x axis after applying the yaw rotation).
  */
-void mat4d_invert_view(struct mat4d*, const double, const double, const double, const double, const double);
+void mat4d_invert_view(struct mat4d*, const GLfloat, const GLfloat, const GLfloat, const GLfloat, const GLfloat);
 
 /**
  * Changes the coefficients of a matrix to make it equal to a projection matrix along the z axis.
@@ -41,7 +42,7 @@ void mat4d_invert_view(struct mat4d*, const double, const double, const double, 
  * @params double z_near : the near plane of the camera.
  * @params double z_far : the far plane of the camera.
  */
-void mat4d_projection(struct mat4d*, const double, const double, const double);
+void mat4d_projection(struct mat4d*, const GLfloat, const GLfloat, const GLfloat);
 
 /**
  * Shows a matrix on the standard output.

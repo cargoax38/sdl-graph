@@ -9,13 +9,15 @@ char* readFile(const char* path) {
 	FILE* file;
 	errno_t error;
 
-	if((error = fopen_s(&file, path, "r")) != 0) {
+	// Read binary mode
+	if((error = fopen_s(&file, path, "rb")) != 0) {
 		fprintf(stderr, "Error when reading the file %s, error code : %d", path, error);
 	}else {
 		fseek(file, 0, SEEK_END);
 		long length = ftell(file);
-		fseek(file, 0, SEEK_SET);
-		text = (char*) malloc(length);
+		rewind(file);
+		//fseek(file, 0, SEEK_SET);
+		text = (char*) malloc((length + 1) * sizeof(char));
 
 		if(text == NULL) {
 			fclose(file);
@@ -24,6 +26,7 @@ char* readFile(const char* path) {
 		}
 
 		fread(text, 1, length, file);
+		text[length] = '\0';
 		fclose(file);
 	}
 
