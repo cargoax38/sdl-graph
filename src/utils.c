@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-char* readFile(const char* path) {
+GLchar* readFile(const GLchar* path) {
 	char* text = NULL;
 
 	FILE* file;
@@ -31,4 +31,64 @@ char* readFile(const char* path) {
 	}
 
 	return text;
+}
+
+GLuint compileShader(GLuint type, const GLchar* source) {
+	GLuint shaderObject;
+
+	if(type == GL_VERTEX_SHADER) {
+		shaderObject = glCreateShader(GL_VERTEX_SHADER);
+	}else if(type == GL_FRAGMENT_SHADER) {
+		shaderObject = glCreateShader(GL_FRAGMENT_SHADER);
+	}
+
+	if(shaderObject == (GLuint)0) {
+		fprintf(stderr, "Error when creating the shader object");
+		return 0;
+	}
+
+	glShaderSource(shaderObject, 1, &source, NULL);
+	glCompileShader(shaderObject);
+
+	return shaderObject;
+}
+
+GLuint createShaderProgram(const GLchar* vertexPath, const GLchar* fragmentPath) {
+	char* vertexSource = readFile(vertexPath);
+
+	if(vertexSource == NULL) {
+		return 0;
+	}
+
+	char* fragmentSource = readFile(fragmentPath);
+
+	if(fragmentSource == NULL) {
+		free(vertexSource);
+		return 0;
+	}
+
+	GLuint program = glCreateProgram();
+
+	GLuint vertexShader = compileShader(GL_VERTEX_SHADER, vertexSource);
+	GLuint fragmentShader = compileShader(GL_FRAGMENT_SHADER, fragmentSource);
+	if(vertexShader == 0 || fragmentShader == 0) {
+		fprintf(stderr, "Problems when initializing shaders");
+	}
+
+	free(vertexSource);
+	free(fragmentSource);
+
+	glAttachShader(program, vertexShader);
+	glAttachShader(program, fragmentShader);
+	glLinkProgram(program);
+
+	glValidateProgram(program);
+
+	glDetachShader(program, vertexShader);
+	glDetachShader(program, fragmentShader);
+
+	glDeleteShader(vertexShader);
+	glDeleteShader(fragmentShader);
+
+	return program;
 }
