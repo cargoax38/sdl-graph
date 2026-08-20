@@ -3,10 +3,11 @@
 
 #include <glad/glad.h>
 
-extern GLuint node_indexes[36];
-extern GLfloat node_vertices[24];
+extern GLuint node_indexes[240];
+extern GLfloat node_vertices[126];
 extern GLuint nodeElementBuffer, nodeVertexBuffer;
 extern GLuint shaderProgram;
+extern GLuint uniform_t;
 extern GLuint uniform_l;
 extern GLuint uniform_x;
 extern GLuint uniform_y;

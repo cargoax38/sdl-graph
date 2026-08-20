@@ -46,7 +46,7 @@ int main(void) {
 		return EXIT_FAILURE;
 	}
 
-	struct node* cube = node_init(0.2, 1, 1, 0);
+	struct node* cube = node_init(1, 1, 1, 0);
 
 	bool running = true;
 	uint64_t begin, end;
